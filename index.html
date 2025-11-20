@@ -3,160 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Futebol (FutApp)</title>
-    
+    <title>Gerenciador de Pelada - GitHub Pages</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
-        .ghost { opacity: 0.5; background: #c8ebfb; }
-        .drag-handle { cursor: grab; }
-        .paid-true { border-left: 4px solid #22c55e; }
-        .paid-false { border-left: 4px solid #ef4444; opacity: 0.7; }
-        .gk-badge { background-color: #fbbf24; color: #000; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .draggable-item { cursor: grab; }
+        .draggable-item:active { cursor: grabbing; }
+        .font-mono-nums { font-variant-numeric: tabular-nums; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans min-h-screen p-4 pb-20">
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
 
-    <div class="max-w-3xl mx-auto">
-        <header class="mb-6 text-center">
-            <h1 class="text-2xl font-bold text-green-700"><i class="fas fa-futbol"></i> FutManager</h1>
-            <p class="text-sm text-gray-500">Gerenciador de Fila e Placar</p>
-            <button onclick="resetData()" class="text-xs text-red-500 underline mt-2">Limpar Cache (Reiniciar tudo)</button>
-        </header>
-
-        <section class="bg-white p-4 rounded shadow mb-4">
-            <h2 class="font-bold mb-2 text-gray-700">Configurações</h2>
-            <div class="flex gap-4 items-center">
-                <div>
-                    <label class="block text-xs text-gray-500">Jogadores p/ Time</label>
-                    <input type="number" id="playersPerTeam" class="border p-1 rounded w-16 text-center" value="5">
-                </div>
-                <div class="flex items-center mt-4 gap-2">
-                    <input type="checkbox" id="isFieldSoccer" class="w-4 h-4" onchange="toggleMode()">
-                    <label for="isFieldSoccer" class="text-sm">Futebol de Campo (Aumentar times)</label>
-                </div>
-            </div>
-        </section>
-
-        <section class="bg-white p-4 rounded shadow mb-4">
-            <h2 class="font-bold mb-2 text-gray-700">Novo Jogador</h2>
-            <div class="flex gap-2">
-                <input type="text" id="playerName" placeholder="Nome..." class="border p-2 rounded flex-grow" onkeydown="if(event.key==='Enter') addPlayer()">
-                <select id="playerType" class="border p-2 rounded bg-gray-50">
-                    <option value="linha">Linha</option>
-                    <option value="goleiro">Goleiro</option>
-                </select>
-                <button onclick="addPlayer()" class="bg-green-600 text-white p-2 rounded hover:bg-green-700"><i class="fas fa-plus"></i></button>
-            </div>
-        </section>
-
-        <section class="bg-white p-4 rounded shadow mb-6 border-t-4 border-blue-500 relative">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-xs font-bold uppercase text-gray-400 tracking-wide">Partida Atual (<span id="matchCountDisplay">1ª</span>)</span>
-                <div class="text-2xl font-mono font-bold" id="timerDisplay">10:00</div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div class="text-center">
-                    <h3 class="font-bold text-blue-700">Time A</h3>
-                    <div class="flex justify-center items-center gap-2 my-2">
-                        <button onclick="updateScore('A', -1)" class="w-6 h-6 bg-gray-200 rounded">-</button>
-                        <span id="scoreA" class="text-3xl font-bold">0</span>
-                        <button onclick="updateScore('A', 1)" class="w-6 h-6 bg-gray-200 rounded">+</button>
-                    </div>
-                    <div id="teamA-list" class="min-h-[50px] bg-blue-50 rounded p-2 text-left text-sm space-y-1 group-list">
-                        </div>
-                </div>
-
-                <div class="text-center">
-                    <h3 class="font-bold text-red-700">Time B</h3>
-                    <div class="flex justify-center items-center gap-2 my-2">
-                        <button onclick="updateScore('B', -1)" class="w-6 h-6 bg-gray-200 rounded">-</button>
-                        <span id="scoreB" class="text-3xl font-bold">0</span>
-                        <button onclick="updateScore('B', 1)" class="w-6 h-6 bg-gray-200 rounded">+</button>
-                    </div>
-                    <div id="teamB-list" class="min-h-[50px] bg-red-50 rounded p-2 text-left text-sm space-y-1 group-list">
-                        </div>
-                </div>
-            </div>
-
-            <div class="flex justify-between border-t pt-4">
-                <button id="btnTimer" onclick="toggleTimer()" class="bg-yellow-500 text-white px-4 py-2 rounded text-sm font-bold shadow">
-                    <i class="fas fa-play"></i> Iniciar/Pausar
-                </button>
-                <button onclick="endMatchModal()" class="bg-gray-800 text-white px-4 py-2 rounded text-sm font-bold shadow">
-                    Encerrar Jogo
-                </button>
-            </div>
-        </section>
-
-        <section class="bg-white p-4 rounded shadow mb-6">
-            <div class="flex justify-between items-center mb-2">
-                <h2 class="font-bold text-gray-700">Próximos / Lista de Espera</h2>
-                <button onclick="autoOrganize()" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">
-                    <i class="fas fa-magic"></i> Organizar Times
-                </button>
-            </div>
-            <p class="text-xs text-gray-500 mb-2">Marque a caixa para confirmar pagamento. Arraste para mudar a ordem.</p>
-            
-            <div id="waiting-list" class="space-y-2 min-h-[100px] group-list">
-                </div>
-        </section>
-    </div>
-
-    <div id="endModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-80 text-center">
-            <h3 class="text-xl font-bold mb-4">Fim de Jogo</h3>
-            <p class="mb-4 text-sm">Quem venceu?</p>
-            <div class="flex flex-col gap-2">
-                <button onclick="resolveMatch('A')" class="bg-blue-600 text-white p-2 rounded">Vitoria Time A</button>
-                <button onclick="resolveMatch('B')" class="bg-red-600 text-white p-2 rounded">Vitoria Time B</button>
-                <button onclick="resolveMatch('draw')" class="bg-gray-500 text-white p-2 rounded">Empate</button>
-            </div>
-            <button onclick="document.getElementById('endModal').classList.add('hidden')" class="mt-4 text-gray-500 text-xs underline">Cancelar</button>
+<div id="app" class="container mx-auto p-4 max-w-6xl">
+    
+    <header class="mb-6 border-b border-slate-700 pb-4 flex justify-between items-center flex-wrap gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-emerald-400 flex items-center gap-2">
+                <i class="ph ph-soccer-ball"></i> Gerenciador de Jogos
+            </h1>
+            <p class="text-slate-400 text-sm">Controle de pagamentos, times, placar e tempo.</p>
         </div>
-    </div>
+        
+        <div class="bg-slate-800 p-2 px-4 rounded-lg flex items-center gap-4 border border-slate-700">
+            <div class="flex flex-col">
+                <label class="text-[10px] text-slate-400 uppercase font-bold">Jogadores/Time</label>
+                <input type="number" v-model.number="settings.playersPerTeam" class="bg-slate-900 border border-slate-600 rounded px-2 py-1 w-16 text-center focus:outline-none focus:border-emerald-500">
+            </div>
+            <div class="h-8 w-px bg-slate-700"></div>
+            <div class="flex flex-col">
+                <label class="text-[10px] text-slate-400 uppercase font-bold">Tempo (Min)</label>
+                <input type="number" v-model.number="matchTimeInput" @change="resetTimer" class="bg-slate-900 border border-slate-600 rounded px-2 py-1 w-16 text-center focus:outline-none focus:border-emerald-500">
+            </div>
+        </div>
+    </header>
 
-    <script>
-        // --- Estado da Aplicação ---
-        let state = {
-            players: [], // {id, name, type, paid, list: 'waiting'|'teamA'|'teamB'}
-            matchCount: 1,
-            scoreA: 0,
-            scoreB: 0,
-            timer: 600, // segundos
-            isRunning: false,
-            lastSave: Date.now()
-        };
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <section class="lg:col-span-4 space-y-6">
+            
+            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                <h2 class="font-bold text-lg mb-3 flex items-center gap-2 text-emerald-400">
+                    <i class="ph ph-user-plus"></i> Cadastro Rápido
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <textarea v-model="input.goalkeepers" placeholder="Goleiros (um por linha)..." rows="2" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm focus:ring-1 focus:ring-emerald-500 outline-none placeholder-slate-600"></textarea>
+                    </div>
+                    <div>
+                        <textarea v-model="input.linePlayers" placeholder="Jogadores de linha (um por linha)..." rows="3" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm focus:ring-1 focus:ring-emerald-500 outline-none placeholder-slate-600"></textarea>
+                    </div>
+                    <button @click="processInput" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded transition text-sm uppercase tracking-wide">
+                        Adicionar
+                    </button>
+                </div>
+            </div>
 
-        let timerInterval = null;
+            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg max-h-[500px] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-lg">Pagantes / Lista</h2>
+                    <span class="text-xs bg-slate-700 px-2 py-1 rounded">{{ paidPlayersCount }} / {{ allPlayers.length }} Pagos</span>
+                </div>
 
-        // --- Inicialização ---
-        window.onload = function() {
-            loadState();
-            renderLists();
-            setupDragAndDrop();
-            updateTimerDisplay();
-        };
+                <ul class="space-y-2">
+                    <li v-for="player in allPlayers" :key="player.id" class="flex items-center justify-between bg-slate-900 p-2 rounded border border-slate-700 hover:border-slate-500 transition">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" :id="'pay-'+player.id" v-model="player.paid" class="w-5 h-5 accent-emerald-500 cursor-pointer rounded">
+                            <div class="flex flex-col">
+                                <label :for="'pay-'+player.id" class="font-medium cursor-pointer select-none text-sm" :class="{'text-emerald-400': player.paid, 'text-slate-400': !player.paid}">
+                                    {{ player.name }}
+                                </label>
+                                <span class="text-[10px] uppercase tracking-wider font-bold" :class="player.role === 'GK' ? 'text-yellow-500' : 'text-blue-400'">
+                                    {{ player.role === 'GK' ? 'Goleiro' : 'Linha' }}
+                                </span>
+                            </div>
+                        </div>
+                        <button @click="removePlayer(player.id)" class="text-slate-600 hover:text-red-500 p-1 transition"><i class="ph ph-trash"></i></button>
+                    </li>
+                    <li v-if="allPlayers.length === 0" class="text-center text-slate-600 py-4 italic text-sm">Nenhum jogador cadastrado.</li>
+                </ul>
+            </div>
+        </section>
 
-        function setupDragAndDrop() {
-            const lists = ['waiting-list', 'teamA-list', 'teamB-list'];
-            lists.forEach(id => {
-                new Sortable(document.getElementById(id), {
-                    group: 'shared', // Permite arrastar entre listas
-                    animation: 150,
-                    handle: '.drag-handle', // Apenas arrasta pelo ícone
-                    ghostClass: 'ghost',
-                    onEnd: function (evt) {
-                        // Atualiza o estado baseado no DOM após o arraste
-                        updateStateFromDOM();
-                    }
-                });
-            });
-        }
+        <section class="lg:col-span-8 space-y-4">
+            
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 shadow-lg">
+                <div class="grid grid-cols-3 items-center">
+                    
+                    <div class="flex flex-col items-center">
+                        <h3 class="text-emerald-400 font-bold text-sm mb-1">TIME A</h3>
+                        <div class="flex items-center gap-3">
+                            <button @click="scores.a > 0 ? scores.a-- : null" class="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center"><i class="ph ph-minus"></i></button>
+                            <span class="text-4xl font-bold font-mono-nums w-12 text-center">{{ scores.a }}</span>
+                            <button @click="scores.a++" class="w-8 h-8 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center"><i class="ph ph-plus"></i></button>
+                        </div>
+                    </div>
 
-        // --- Gerenciamento de Dados e Cache ---
-        function saveState() {
-            state.lastSave =
+                    <div class="flex flex-col items-center justify-center border-x border-slate-700 px-4">
+                        <div class="text-5xl font-bold font-mono-nums tracking-wider mb-2" :class="{'text-red-400 animate-pulse': timer.remaining < 60 && timer.remaining > 0}">
+                            {{ formattedTime }}
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="toggleTimer" class="px-4 py-1 rounded text-sm font-bold flex items-center gap-1 transition" :class="timer.isRunning ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-green-600 hover:bg-green-500'">
+                                <i class="ph" :class="timer.isRunning ? 'ph-pause' : 'ph-play'"></i>
+                                {{ timer.isRunning ? 'Pausar' : 'Iniciar' }}
+                            </button>
+                            <button @click="resetTimer" class="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-sm text-slate-300" title="Resetar Tempo">
+                                <i class="ph ph-arrow-counter-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-center">
+                        <h3 class="text-red-400 font-bold text-sm mb-1">TIME B</h3>
+                        <div class="flex items-center gap-3">
+                            <button @click="scores.b > 0 ? scores.b-- : null" class="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center"><i class="ph ph-minus"></i></button>
+                            <span class="text-4xl font-bold font-mono-nums w-12 text-center">{{ scores.b }}</span>
+                            <button @click="scores.b++" class="w-8 h-8 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center"><i class="ph ph-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end">
+                <button @click="generateTeams" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold transition flex items-center gap-2 shadow-lg hover:shadow-blue-500/20">
+                    <i class="ph ph-shuffle"></i> Sortear Novos Times
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <div class="flex flex-col gap-1">
+                    <div class="bg-slate-800/80 p-2 rounded-t border-t-4 border-emerald-500 flex justify-between items-center">
+                        <span class="font-bold text-emerald-400">Time A</span>
+                        <span class="text-xs text-slate-500">{{ game.teamA.length }}/{{ settings.playersPerTeam }}</span>
+                    </div>
+                    <div 
+                        class="bg-slate-800/40 min-h-[300px] p-2 rounded-b border border-slate-700 flex flex-col gap-2 transition-all"
+                        @dragover.prevent @drop="onDrop($event, 'teamA')"
+                        :class="{'bg-emerald-500/10 border-emerald-500/50': isDragging}"
+                    >
+                        <player-card v-for="player in game.teamA" :key="player.id" :player="player" @dragstart="onDragStart($event, player, 'teamA')"></player-card>
+                        <div v-if="game.teamA.length === 0" class="flex-1 flex items-center justify-center text-slate-600 text-sm opacity-50 border-2 border-dashed border-slate-700 rounded m-2">Arraste aqui</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-1 order-last md:order-none">
+                    <div class="bg-slate-800/80 p-2 rounded-t border-t-4 border-yellow-500 flex justify-between items-center">
+                        <span class="font-bold text-yellow-400">Próximos</span>
+                        <span class="text-xs text-slate-500">{{ game.queue.length }} na fila</span>
+                    </div>
+                    <div 
+                        class="bg-slate-800/40 min-h-[300px] p-2 rounded-b border border-slate-700 flex flex-col gap-2 transition-all"
+                        @dragover.prevent @drop="onDrop($event, 'queue')"
+                        :class="{'bg-yellow-500/10 border-yellow-500/50': isDragging}"
+                    >
+                         <player-card v-for="(player, index) in game.queue" :key="player.id" :player="player" :index="index" @dragstart="onDragStart($event, player, 'queue
