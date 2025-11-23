@@ -3,227 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Pelada PRO</title>
+    <title>Gestão de Pelada PRO - v1.10</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; overflow: hidden; } /* Remove scroll da página */
         .draggable-item { cursor: grab; touch-action: none; }
         .draggable-item:active { cursor: grabbing; }
         .font-mono-nums { font-variant-numeric: tabular-nums; }
         
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #1f2937; }
+        /* Scrollbar fina e escura */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #111827; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+        
+        .drag-over-item { border-top: 2px solid #34d399 !important; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen pb-10 text-xs">
+<body class="bg-gray-950 text-gray-100 h-screen w-screen flex flex-col text-xs overflow-hidden">
 
-<div id="app" class="container mx-auto p-2 max-w-7xl">
+<div id="app" class="flex flex-col h-full w-full p-2 gap-2 max-w-[1600px] mx-auto">
     
-    <header class="mb-3 bg-gray-800 p-2 rounded-xl shadow-lg border border-gray-700">
-        <div class="flex flex-wrap justify-between items-center gap-2">
-            <div>
-                <h1 class="text-lg font-extrabold text-emerald-400 flex items-center gap-2">
-                    <i class="ph ph-soccer-ball"></i> Gestão de Pelada
-                </h1>
-                <p class="text-[10px] text-gray-400">Ordem da lista (Sem sorteio)</p>
+    <header class="bg-gray-900 p-2 rounded-lg border border-gray-800 flex-shrink-0 flex justify-between items-center gap-2">
+        <div>
+            <h1 class="text-sm font-bold text-emerald-400 flex items-center gap-2">
+                <i class="ph ph-soccer-ball"></i> Gestão de Pelada
+            </h1>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1 bg-gray-800 px-2 py-1 rounded border border-gray-700">
+                <label class="text-gray-500 text-[9px] uppercase font-bold">Por Time:</label>
+                <select v-model.number="config.playersPerTeam" class="bg-transparent text-white focus:outline-none text-[10px] font-bold text-center w-8">
+                    <option :value="5">5</option>
+                    <option :value="6">6</option>
+                    <option :value="7">7</option>
+                    <option :value="11">11</option>
+                </select>
             </div>
             
-            <div class="flex flex-wrap gap-2 text-xs items-center">
-                <div class="flex flex-col">
-                    <label class="text-gray-500 text-[9px] font-bold uppercase">Jogadores/Time</label>
-                    <select v-model.number="config.playersPerTeam" class="bg-gray-700 border border-gray-600 rounded px-1 py-0.5 text-white focus:border-emerald-500 outline-none text-[10px]">
-                        <option :value="5">5 (Futsal)</option>
-                        <option :value="6">6 (Society)</option>
-                        <option :value="7">7 (Society)</option>
-                        <option :value="11">11 (Campo)</option>
-                    </select>
-                </div>
-                <div class="h-6 w-px bg-gray-600 mx-1"></div>
-                <div class="flex flex-col">
-                    <label class="text-gray-500 text-[9px] font-bold uppercase">Modo Atual</label>
-                    <span class="font-bold text-emerald-400 text-[10px]">{{ status.isFirstMatch ? '1ª (10min)' : 'Normal (7min)' }}</span>
-                </div>
-                <button @click="resetAll" class="bg-red-900/50 hover:bg-red-800 text-red-200 px-2 py-1 rounded border border-red-700 text-[10px] ml-auto">
-                    Limpar
-                </button>
+            <div class="flex items-center gap-1">
+                <span class="text-[9px] text-gray-500 uppercase font-bold">Tempo:</span>
+                <span class="font-bold text-emerald-400 text-[10px]">{{ status.isFirstMatch ? '10 min' : '7 min' }}</span>
             </div>
+
+            <button @click="resetAll" class="text-red-400 hover:text-red-300 text-[10px] uppercase font-bold px-2 border-l border-gray-700">
+                Resetar
+            </button>
         </div>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-1 min-h-0">
         
-        <section class="lg:col-span-3 space-y-2">
-            <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden flex flex-col h-full max-h-[600px]">
-                <div @click="ui.showRegister = !ui.showRegister" class="p-2 bg-gray-750 cursor-pointer flex justify-between items-center hover:bg-gray-700 transition border-b border-gray-700">
-                    <h2 class="font-bold text-gray-300 flex items-center gap-2 text-xs"><i class="ph ph-users"></i> Lista de Presença</h2>
-                    <i class="ph" :class="ui.showRegister ? 'ph-caret-up' : 'ph-caret-down'"></i>
+        <section class="lg:col-span-2 flex flex-col bg-gray-900 rounded-lg border border-gray-800 h-full overflow-hidden">
+            <div class="flex-shrink-0 border-b border-gray-800">
+                <div @click="ui.showRegister = !ui.showRegister" class="p-2 bg-gray-800 cursor-pointer flex justify-between items-center hover:bg-gray-750 transition">
+                    <h2 class="font-bold text-gray-300 flex items-center gap-1 text-[11px]"><i class="ph ph-users"></i> Cadastro</h2>
+                    <i class="ph text-xs" :class="ui.showRegister ? 'ph-caret-up' : 'ph-caret-down'"></i>
                 </div>
                 
-                <div v-show="ui.showRegister" class="p-2 space-y-2 border-b border-gray-700 bg-gray-800">
-                    <textarea v-model="input.goalkeepers" placeholder="Goleiros (um por linha)..." class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-[10px] h-14 focus:ring-1 focus:ring-emerald-500 outline-none"></textarea>
-                    <textarea v-model="input.lines" placeholder="Linha (um por linha)..." class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-[10px] h-20 focus:ring-1 focus:ring-emerald-500 outline-none"></textarea>
-                    <button @click="addPlayers" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 rounded text-[10px] uppercase tracking-wide transition">Adicionar</button>
+                <div v-show="ui.showRegister" class="p-2 space-y-1.5 bg-gray-900">
+                    <textarea v-model="input.goalkeepers" placeholder="Goleiros..." class="w-full bg-gray-950 border border-gray-700 rounded p-1.5 text-[10px] h-12 focus:ring-1 focus:ring-emerald-500 outline-none resize-none"></textarea>
+                    <textarea v-model="input.lines" placeholder="Jogadores..." class="w-full bg-gray-950 border border-gray-700 rounded p-1.5 text-[10px] h-16 focus:ring-1 focus:ring-emerald-500 outline-none resize-none"></textarea>
+                    <button @click="addPlayers" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-1 rounded text-[10px] uppercase tracking-wide transition">Adicionar</button>
                 </div>
+            </div>
 
-                <div class="px-2 py-1 bg-gray-750 border-b border-gray-700 flex justify-between items-center shrink-0">
-                    <span class="text-[9px] uppercase font-bold text-gray-500">Jogadores ({{allPlayers.length}})</span>
-                    
-                    <button 
-                        @click="markAllPaid" 
-                        class="bg-emerald-900/40 border border-emerald-600/50 hover:bg-emerald-800 text-emerald-400 text-[9px] px-2 py-0.5 rounded flex items-center gap-1 transition shadow-sm"
-                        title="Marcar todos como pagos"
-                    >
-                        <span>Todos Pagos</span>
-                        <i class="ph ph-check-double text-xs"></i>
-                    </button>
-                </div>
+            <div class="px-2 py-1.5 bg-gray-800 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
+                <span class="text-[9px] uppercase font-bold text-gray-500">Total: {{allPlayers.length}}</span>
+                <button @click="markAllPaid" class="text-emerald-500 hover:text-emerald-400 text-[9px] flex items-center gap-1 font-bold" title="Confirmar Todos">
+                    Pagar Todos <i class="ph ph-check-double"></i>
+                </button>
+            </div>
 
-                <div class="flex-1 overflow-y-auto p-2 bg-gray-800">
-                    <ul class="space-y-1">
-                        <li v-for="(p, idx) in allPlayers" :key="p.id" class="flex items-center justify-between bg-gray-900 p-1.5 rounded border border-gray-700 group hover:border-gray-500 transition">
-                            <div class="flex items-center gap-2 overflow-hidden">
-                                <span class="text-[9px] text-gray-500 font-mono w-3 text-right">{{ idx + 1 }}</span>
-                                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="p.role === 'GK' ? 'bg-yellow-500' : 'bg-blue-500'"></span>
-                                <span class="text-[11px] font-medium truncate" :class="{'opacity-50': !p.paid}">{{ p.name }}</span>
-                            </div>
-                            <input type="checkbox" v-model="p.paid" class="w-3.5 h-3.5 accent-emerald-500 cursor-pointer rounded">
-                        </li>
-                        <li v-if="allPlayers.length === 0" class="text-center text-gray-600 text-[10px] py-4 italic">Lista vazia</li>
-                    </ul>
-                </div>
-                
-                <div class="p-2 border-t border-gray-700 bg-gray-800 shrink-0">
-                     <button @click="generateInitialTeams" class="bg-blue-600 hover:bg-blue-500 text-white w-full py-2 rounded font-bold text-[10px] flex items-center justify-center gap-2 shadow hover:shadow-lg transition">
-                        <i class="ph ph-list-numbers"></i> Gerar Times (Ordem)
-                    </button>
-                </div>
+            <div class="flex-1 overflow-y-auto p-1.5 bg-gray-900">
+                <ul class="space-y-1">
+                    <li v-for="(p, idx) in allPlayers" :key="p.id" class="flex items-center justify-between bg-gray-800 p-1 rounded border border-gray-700 group hover:border-gray-600 transition">
+                        <div class="flex items-center gap-1.5 overflow-hidden">
+                            <span class="text-[9px] text-gray-500 font-mono w-3 text-right">{{ idx + 1 }}</span>
+                            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="p.role === 'GK' ? 'bg-yellow-500' : 'bg-blue-500'"></span>
+                            <span class="text-[10px] font-medium truncate text-gray-300" :class="{'opacity-40': !p.paid}">{{ p.name }}</span>
+                        </div>
+                        <input type="checkbox" v-model="p.paid" class="w-3 h-3 accent-emerald-500 cursor-pointer rounded-sm">
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="p-2 border-t border-gray-800 bg-gray-900 flex-shrink-0">
+                 <button @click="generateInitialTeams" class="bg-blue-700 hover:bg-blue-600 text-white w-full py-1.5 rounded font-bold text-[10px] flex items-center justify-center gap-2 shadow transition">
+                    <i class="ph ph-list-numbers"></i> Gerar (Ordem)
+                </button>
             </div>
         </section>
 
-        <section class="lg:col-span-6 flex flex-col gap-3">
+        <section class="lg:col-span-7 flex flex-col gap-2 h-full min-h-0">
             
-            <div class="bg-gray-800 rounded-xl border border-gray-600 shadow-xl relative z-0">
+            <div class="bg-gray-900 rounded-lg border border-gray-800 shadow relative flex-shrink-0">
                 <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-500 via-yellow-500 to-emerald-500 opacity-60"></div>
                 
-                <div class="p-2 flex items-center justify-between relative z-10">
-                    
-                    <div class="flex flex-col items-center w-1/3">
-                        <h3 class="font-bold text-emerald-400 mb-1 tracking-wider text-[10px]">TIME A</h3>
-                        <div class="flex items-center gap-1 bg-gray-900/80 rounded p-1 border border-gray-700 shadow-sm">
-                            <button @click="adjustScore('A', -1)" class="w-6 h-6 hover:bg-gray-700 rounded text-gray-400 flex items-center justify-center active:scale-95 transition"><i class="ph ph-minus font-bold"></i></button>
-                            <span class="text-xl font-mono-nums font-bold w-6 text-center text-white">{{ match.scoreA }}</span>
-                            <button @click="adjustScore('A', 1)" class="w-6 h-6 hover:bg-emerald-900 rounded text-emerald-400 flex items-center justify-center active:scale-95 transition"><i class="ph ph-plus font-bold"></i></button>
+                <div class="p-2 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="flex flex-col items-center">
+                            <span class="text-[9px] font-bold text-emerald-500 uppercase">Time A</span>
+                            <div class="flex items-center gap-1 bg-black/30 rounded p-0.5 border border-gray-700">
+                                <button @click="adjustScore('A', -1)" class="w-5 h-5 hover:bg-gray-700 rounded text-gray-400 flex items-center justify-center"><i class="ph ph-minus"></i></button>
+                                <span class="text-lg font-mono-nums font-bold w-6 text-center text-white">{{ match.scoreA }}</span>
+                                <button @click="adjustScore('A', 1)" class="w-5 h-5 hover:bg-emerald-900/50 rounded text-emerald-400 flex items-center justify-center"><i class="ph ph-plus"></i></button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="flex flex-col items-center justify-center w-1/3 z-20">
-                        <div class="text-4xl font-mono-nums font-bold tracking-widest mb-1 transition-colors leading-none drop-shadow-md" :class="{'text-red-500 animate-pulse': match.timeLeft < 60 && match.timeLeft > 0, 'text-white': match.timeLeft >= 60}">
+                    <div class="flex flex-col items-center">
+                        <div class="text-3xl font-mono-nums font-bold tracking-widest leading-none" :class="{'text-red-500 animate-pulse': match.timeLeft < 60 && match.timeLeft > 0, 'text-white': match.timeLeft >= 60}">
                             {{ formattedTime }}
                         </div>
-                        <div class="flex gap-2 mb-1">
-                            <button @click="toggleTimer" class="w-7 h-7 rounded-full flex items-center justify-center text-white transition transform hover:scale-110 shadow-lg border border-white/10" :class="match.timerRunning ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-emerald-600 hover:bg-emerald-500'">
-                                <i class="ph text-xs" :class="match.timerRunning ? 'ph-pause-fill' : 'ph-play-fill'"></i>
+                        <div class="flex gap-2 mt-1">
+                            <button @click="toggleTimer" class="px-3 py-0.5 rounded-full text-white text-[10px] font-bold uppercase tracking-wider shadow border border-white/10 transition hover:scale-105" :class="match.timerRunning ? 'bg-yellow-600' : 'bg-emerald-600'">
+                                {{ match.timerRunning ? 'Pausar' : 'Iniciar' }}
                             </button>
-                            <button @click="resetTimer(false)" class="w-7 h-7 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-gray-300 border border-gray-600 transition" title="Reiniciar">
-                                <i class="ph ph-arrow-counter-clockwise text-xs"></i>
+                            <button @click="resetTimer(false)" class="w-6 h-6 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 border border-gray-700" title="Resetar Tempo">
+                                <i class="ph ph-arrow-counter-clockwise"></i>
                             </button>
-                        </div>
-                        <div class="text-[8px] uppercase font-bold text-gray-500 tracking-widest">
-                            {{ status.isFirstMatch ? 'Meta: 3 Gols' : 'Meta: 2 Gols' }}
                         </div>
                     </div>
 
-                    <div class="flex flex-col items-center w-1/3">
-                        <h3 class="font-bold text-red-400 mb-1 tracking-wider text-[10px]">TIME B</h3>
-                        <div class="flex items-center gap-1 bg-gray-900/80 rounded p-1 border border-gray-700 shadow-sm">
-                            <button @click="adjustScore('B', -1)" class="w-6 h-6 hover:bg-gray-700 rounded text-gray-400 flex items-center justify-center active:scale-95 transition"><i class="ph ph-minus font-bold"></i></button>
-                            <span class="text-xl font-mono-nums font-bold w-6 text-center text-white">{{ match.scoreB }}</span>
-                            <button @click="adjustScore('B', 1)" class="w-6 h-6 hover:bg-red-900 rounded text-red-400 flex items-center justify-center active:scale-95 transition"><i class="ph ph-plus font-bold"></i></button>
+                    <div class="flex items-center gap-3">
+                         <div class="flex flex-col items-center">
+                            <span class="text-[9px] font-bold text-red-500 uppercase">Time B</span>
+                            <div class="flex items-center gap-1 bg-black/30 rounded p-0.5 border border-gray-700">
+                                <button @click="adjustScore('B', -1)" class="w-5 h-5 hover:bg-gray-700 rounded text-gray-400 flex items-center justify-center"><i class="ph ph-minus"></i></button>
+                                <span class="text-lg font-mono-nums font-bold w-6 text-center text-white">{{ match.scoreB }}</span>
+                                <button @click="adjustScore('B', 1)" class="w-5 h-5 hover:bg-red-900/50 rounded text-red-400 flex items-center justify-center"><i class="ph ph-plus"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 h-full">
-                <div class="bg-gray-800/60 border border-emerald-500/20 rounded-lg flex flex-col shadow-inner" 
+            <div class="grid grid-cols-2 gap-2 flex-1 min-h-0">
+                <div class="bg-gray-900/50 border border-emerald-500/20 rounded-lg flex flex-col shadow-inner overflow-hidden" 
                      @dragover.prevent @drop="onDrop($event, 'teamA')">
-                    <div class="bg-emerald-900/20 p-1.5 border-b border-emerald-500/20 text-center">
+                    <div class="bg-emerald-900/20 p-1 border-b border-emerald-500/10 text-center flex-shrink-0">
                         <span class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Em Campo (A)</span>
                     </div>
-                    <div class="p-1.5 flex-1 min-h-[140px] space-y-1">
+                    <div class="p-1.5 flex-1 overflow-y-auto space-y-1">
                         <player-card v-for="p in match.teamA" :key="p.id" :player="p" @dragstart="onDragStart($event, p, 'teamA')"></player-card>
-                        <div v-if="match.teamA.length === 0" class="h-full flex items-center justify-center opacity-20 text-[10px]">Arrastar Jogador</div>
+                        <div v-if="match.teamA.length === 0" class="h-full flex items-center justify-center opacity-20 text-[10px] italic border-2 border-dashed border-gray-700 m-2 rounded">
+                            Arrastar Jogadores
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-gray-800/60 border border-red-500/20 rounded-lg flex flex-col shadow-inner"
+                <div class="bg-gray-900/50 border border-red-500/20 rounded-lg flex flex-col shadow-inner overflow-hidden"
                      @dragover.prevent @drop="onDrop($event, 'teamB')">
-                    <div class="bg-red-900/20 p-1.5 border-b border-red-500/20 text-center">
+                    <div class="bg-red-900/20 p-1 border-b border-red-500/10 text-center flex-shrink-0">
                         <span class="text-[9px] font-bold text-red-500 uppercase tracking-widest">Em Campo (B)</span>
                     </div>
-                    <div class="p-1.5 flex-1 min-h-[140px] space-y-1">
+                    <div class="p-1.5 flex-1 overflow-y-auto space-y-1">
                         <player-card v-for="p in match.teamB" :key="p.id" :player="p" @dragstart="onDragStart($event, p, 'teamB')"></player-card>
-                        <div v-if="match.teamB.length === 0" class="h-full flex items-center justify-center opacity-20 text-[10px]">Arrastar Jogador</div>
+                         <div v-if="match.teamB.length === 0" class="h-full flex items-center justify-center opacity-20 text-[10px] italic border-2 border-dashed border-gray-700 m-2 rounded">
+                            Arrastar Jogadores
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gray-800 p-2 rounded-xl border border-gray-700 flex flex-col gap-2 shadow-lg">
-                <button @click="endMatch" class="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold py-2 rounded-lg shadow-lg flex items-center justify-center gap-2 text-xs uppercase tracking-wide transition transform active:scale-95">
-                    <i class="ph ph-whistle text-lg"></i> Encerrar Partida
+            <div class="bg-gray-900 p-2 rounded-lg border border-gray-800 flex-shrink-0">
+                <button @click="endMatch" class="w-full bg-gradient-to-r from-orange-700 to-red-700 hover:from-orange-600 hover:to-red-600 text-white font-bold py-2 rounded shadow flex items-center justify-center gap-2 text-xs uppercase tracking-wide transition transform active:scale-[0.99]">
+                    <i class="ph ph-whistle text-sm"></i> Encerrar & Rotacionar
                 </button>
-                <div class="flex justify-center">
-                    <span class="text-[9px] font-mono text-gray-500" v-if="status.waitingTeamsCount >= 2">Regra: Empate remove os dois times</span>
-                    <span class="text-[9px] font-mono text-gray-500" v-else>Regra: Empate remove time B</span>
-                </div>
             </div>
 
         </section>
 
-        <section class="lg:col-span-3 space-y-3 flex flex-col">
+        <section class="lg:col-span-3 flex flex-col gap-2 h-full min-h-0 overflow-hidden">
             
-            <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden flex-shrink-0 shadow-lg">
-                <div class="p-1.5 bg-gray-750 border-b border-gray-700 text-center">
+            <div class="bg-gray-900 rounded-lg border border-gray-800 flex flex-col overflow-hidden h-[45%] flex-shrink-0">
+                <div class="p-1.5 bg-gray-800 border-b border-gray-700 text-center flex-shrink-0">
                     <h3 class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Próximos Times</h3>
                 </div>
                 
-                <div class="p-1.5 space-y-2">
-                    <div class="bg-gray-900/40 rounded border border-gray-700/50" @dragover.prevent @drop="onDrop($event, 'nextTeam1')">
-                        <div class="px-2 py-1 text-[9px] font-bold text-gray-500 uppercase flex justify-between bg-gray-900/50 rounded-t">
+                <div class="flex-1 overflow-y-auto p-1.5 space-y-2">
+                    <div class="bg-black/20 rounded border border-gray-700/50 flex flex-col" @dragover.prevent @drop="onDrop($event, 'nextTeam1')">
+                        <div class="px-2 py-0.5 text-[9px] font-bold text-gray-500 uppercase flex justify-between bg-gray-800/50 rounded-t">
                             <span>Próximo 1</span>
-                            <span>{{ nextTeams.team1.length }}/{{config.playersPerTeam}}</span>
+                            <span :class="nextTeams.team1.length === config.playersPerTeam ? 'text-green-500' : ''">{{ nextTeams.team1.length }}/{{config.playersPerTeam}}</span>
                         </div>
-                        <div class="p-1 min-h-[50px] space-y-1">
-                            <player-card v-for="p in nextTeams.team1" :key="p.id" :player="p" :mini="true" @dragstart="onDragStart($event, p, 'nextTeam1')"></player-card>
-                            <div v-if="nextTeams.team1.length === 0" class="text-[8px] text-center text-gray-600 py-2 italic">Vazio</div>
+                        <div class="p-1 space-y-0.5 min-h-[60px]"> <player-card v-for="p in nextTeams.team1" :key="p.id" :player="p" :mini="true" @dragstart="onDragStart($event, p, 'nextTeam1')"></player-card>
+                            <div v-if="nextTeams.team1.length === 0" class="text-[8px] text-center text-gray-600 py-4 italic">Vazio</div>
                         </div>
                     </div>
 
-                    <div class="bg-gray-900/40 rounded border border-gray-700/50" v-if="queue.length > config.playersPerTeam" @dragover.prevent @drop="onDrop($event, 'nextTeam2')">
-                        <div class="px-2 py-1 text-[9px] font-bold text-gray-500 uppercase flex justify-between bg-gray-900/50 rounded-t">
+                    <div class="bg-black/20 rounded border border-gray-700/50 flex flex-col" @dragover.prevent @drop="onDrop($event, 'nextTeam2')">
+                        <div class="px-2 py-0.5 text-[9px] font-bold text-gray-500 uppercase flex justify-between bg-gray-800/50 rounded-t">
                             <span>Próximo 2</span>
-                            <span>{{ nextTeams.team2.length }}/{{config.playersPerTeam}}</span>
+                             <span :class="nextTeams.team2.length === config.playersPerTeam ? 'text-green-500' : ''">{{ nextTeams.team2.length }}/{{config.playersPerTeam}}</span>
                         </div>
-                        <div class="p-1 min-h-[50px] space-y-1">
+                        <div class="p-1 space-y-0.5 min-h-[60px]">
                             <player-card v-for="p in nextTeams.team2" :key="p.id" :player="p" :mini="true" @dragstart="onDragStart($event, p, 'nextTeam2')"></player-card>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden flex-1 flex flex-col min-h-[180px] shadow-lg">
-                <div class="p-2 bg-gray-750 border-b border-gray-700 flex justify-between items-center">
+            <div class="bg-gray-900 rounded-lg border border-gray-800 flex flex-col overflow-hidden flex-1 min-h-0">
+                <div class="p-1.5 bg-gray-800 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
                     <h3 class="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">Fila de Espera</h3>
-                    <span class="bg-gray-900 text-[9px] px-1.5 py-0.5 rounded text-gray-400 border border-gray-700">{{ queue.length }}</span>
+                    <span class="bg-gray-950 text-[9px] px-1.5 rounded text-gray-400 border border-gray-700">{{ queue.length }}</span>
                 </div>
-                <div class="flex-1 p-1.5 bg-gray-900/30 overflow-y-auto" @dragover.prevent @drop="onDrop($event, 'queue')">
-                    <div class="space-y-1 min-h-full">
-                        <player-card v-for="(p, index) in queue" :key="p.id" :player="p" :index="index + 1" @dragstart="onDragStart($event, p, 'queue')"></player-card>
+                <div class="flex-1 p-1.5 overflow-y-auto bg-black/20" @dragover.prevent @drop="onDrop($event, 'queue')">
+                    <div class="space-y-0.5"> <player-card 
+                            v-for="(p, index) in queue" 
+                            :key="p.id" 
+                            :player="p" 
+                            :index="index + 1" 
+                            :mini="true" 
+                            :show-remove="true"
+                            @dragstart="onDragStart($event, p, 'queue')"
+                            @drop-on-card="onDropOnQueueCard"
+                            @remove-click="removeFromQueue"
+                        ></player-card>
                         <div v-if="queue.length === 0" class="text-center text-gray-600 text-[10px] py-10 italic">
                             Ninguém na espera
                         </div>
@@ -238,21 +240,32 @@
 
 <script type="text/x-template" id="player-card-template">
     <div 
-        class="draggable-item bg-gray-700 hover:bg-gray-600 rounded flex justify-between items-center shadow-sm border-l-[3px] select-none transition group"
+        class="draggable-item bg-gray-800 hover:bg-gray-700 rounded flex justify-between items-center shadow-sm border-l-[3px] select-none transition group relative"
         :class="[
-            player.role === 'GK' ? 'border-yellow-500' : 'border-blue-500',
-            mini ? 'p-1' : 'py-1 px-2'
+            player.role === 'GK' ? 'border-yellow-600' : 'border-blue-600',
+            mini ? 'p-1 h-6' : 'p-1.5 mb-1',
+            isDragOver ? 'drag-over-item' : ''
         ]"
         draggable="true"
+        @dragover.prevent="onDragOver"
+        @dragleave="isDragOver = false"
+        @drop.stop="onDrop"
     >
-        <div class="flex items-center gap-2 overflow-hidden w-full">
-            <span v-if="index" class="text-[9px] font-mono bg-gray-800 w-3.5 h-3.5 flex items-center justify-center rounded text-gray-400 flex-shrink-0">{{ index }}</span>
-            <div class="flex flex-col truncate w-full">
-                <span class="font-bold text-gray-200 truncate leading-tight" :class="mini ? 'text-[9px]' : 'text-[11px]'">{{ player.name }}</span>
+        <div class="flex items-center gap-1.5 overflow-hidden w-full">
+            <span v-if="index" class="text-[9px] font-mono bg-gray-900 w-3.5 h-3.5 flex items-center justify-center rounded text-gray-400 flex-shrink-0 leading-none">{{ index }}</span>
+            <div class="flex flex-col truncate w-full justify-center">
+                <span class="font-bold text-gray-300 truncate leading-none" :class="mini ? 'text-[9px]' : 'text-[11px]'">{{ player.name }}</span>
                 <span v-if="!mini && player.role === 'GK'" class="text-[7px] text-yellow-500 uppercase font-bold leading-none mt-[1px]">Goleiro</span>
             </div>
         </div>
-        <i v-if="!mini" class="ph ph-dots-six-vertical text-gray-500 text-[10px] group-hover:text-gray-300 ml-1"></i>
+        
+        <div class="flex items-center gap-0.5">
+            <span v-if="mini && player.role === 'GK'" class="text-[7px] text-yellow-500 font-bold px-1">GK</span>
+            <i v-if="!mini" class="ph ph-dots-six-vertical text-gray-600 text-[10px] group-hover:text-gray-400 ml-1"></i>
+            <button v-if="showRemove" @click.stop="$emit('remove-click', player.id)" class="ml-1 text-red-500 hover:text-red-300 p-0.5 rounded hover:bg-gray-900 transition" title="Remover">
+                <i class="ph ph-x text-[9px]"></i>
+            </button>
+        </div>
     </div>
 </script>
 
@@ -265,15 +278,12 @@
             const config = reactive({
                 playersPerTeam: 5, 
                 timeFirstMatch: 10, 
-                timeNormalMatch: 7,
-                goalLimitFirst: 3,
-                goalLimitNormal: 2
+                timeNormalMatch: 7
             });
 
             const status = reactive({
                 isFirstMatch: true,
-                lastUpdate: Date.now(),
-                waitingTeamsCount: 0
+                lastUpdate: Date.now()
             });
 
             const ui = reactive({ showRegister: true });
@@ -358,11 +368,16 @@
                 }
             };
 
-            // GERAÇÃO SEQUENCIAL
+            const removeFromQueue = (id) => {
+                if(confirm("Remover este jogador da fila de espera?")) {
+                    queue.value = queue.value.filter(p => p.id !== id);
+                    saveData();
+                }
+            };
+
+            // GERAÇÃO SEQUENCIAL (Inicial)
             const generateInitialTeams = () => {
                 const paid = allPlayers.value.filter(p => p.paid);
-                
-                // Separa mantendo a ordem (sem shuffle)
                 let gks = paid.filter(p => p.role === 'GK');
                 let lines = paid.filter(p => p.role === 'LINE');
 
@@ -425,7 +440,7 @@
                 saveData();
             };
 
-            // Rotação
+            // --- LÓGICA DE ROTACÃO COMPLETA (Mantida da v9) ---
             const endMatch = () => {
                 if(!confirm("Encerrar partida?")) return;
 
@@ -440,56 +455,87 @@
                 const teamA_Players = [...match.teamA];
                 const teamB_Players = [...match.teamB];
                 
-                const next1Ready = nextTeams.team1.length >= (config.playersPerTeam - 1);
-                const next2Ready = nextTeams.team2.length >= (config.playersPerTeam - 1);
-                const waitingTeams = (next1Ready ? 1 : 0) + (next2Ready ? 1 : 0);
-                status.waitingTeamsCount = waitingTeams;
+                const totalAvailable = nextTeams.team1.length + nextTeams.team2.length + queue.value.length;
+                const neededForTwoTeams = config.playersPerTeam * 2;
+                
+                let exitA = false;
+                let exitB = false;
+
+                if (winner === 'DRAW') {
+                    if (totalAvailable >= neededForTwoTeams) {
+                        exitA = true;
+                        exitB = true;
+                    } else {
+                        exitB = true; 
+                    }
+                } else {
+                    if (winner === 'A') exitB = true;
+                    else exitA = true;
+                }
 
                 const sendToQueue = (players) => {
                     players.forEach(p => queue.value.push(p));
                 };
 
-                if (winner === 'DRAW') {
-                    if (waitingTeams >= 2) {
-                        sendToQueue(teamA_Players);
-                        sendToQueue(teamB_Players);
-                        match.teamA = []; 
-                        match.teamB = [];
-                    } else {
-                        sendToQueue(teamB_Players);
-                        match.teamB = [];
-                    }
-                } else {
-                    const losers = winner === 'A' ? teamB_Players : teamA_Players;
-                    const winners = winner === 'A' ? teamA_Players : teamB_Players;
-
-                    sendToQueue(losers);
-                    match.teamA = winners;
-                    match.teamB = []; 
+                if (exitA) {
+                    sendToQueue(teamA_Players);
+                    match.teamA = [];
+                }
+                if (exitB) {
+                    sendToQueue(teamB_Players);
+                    match.teamB = [];
                 }
 
-                const getNextChallenger = () => {
-                    let challenger = [];
-                    if (nextTeams.team1.length > 0) {
-                        challenger = [...nextTeams.team1];
-                        nextTeams.team1 = []; 
-                        if (nextTeams.team2.length > 0) {
-                            nextTeams.team1 = [...nextTeams.team2];
-                            nextTeams.team2 = [];
+                const promoteNextPlayers = (targetArray) => {
+                    if(targetArray.length >= config.playersPerTeam) return;
+
+                    if(nextTeams.team1.length > 0) {
+                        while(nextTeams.team1.length > 0 && targetArray.length < config.playersPerTeam) {
+                            targetArray.push(nextTeams.team1.shift());
                         }
-                    } else {
-                        while (challenger.length < config.playersPerTeam && queue.value.length > 0) {
-                            challenger.push(queue.value.shift());
+                        if(nextTeams.team1.length === 0 && nextTeams.team2.length > 0) {
+                            while(nextTeams.team2.length > 0) {
+                                nextTeams.team1.push(nextTeams.team2.shift());
+                            }
                         }
                     }
-                    return challenger;
+                    
+                    if(targetArray.length < config.playersPerTeam) {
+                        const hasGK = targetArray.some(p => p.role === 'GK');
+                        if (!hasGK && queue.value.length > 0) {
+                            const gkIndex = queue.value.findIndex(p => p.role === 'GK');
+                            if (gkIndex !== -1) {
+                                const [gk] = queue.value.splice(gkIndex, 1);
+                                targetArray.push(gk);
+                            }
+                        }
+                        while(targetArray.length < config.playersPerTeam && queue.value.length > 0) {
+                            targetArray.push(queue.value.shift());
+                        }
+                    }
                 };
 
-                if (match.teamA.length === 0) match.teamA = getNextChallenger();
-                if (match.teamB.length === 0) match.teamB = getNextChallenger();
+                if (match.teamA.length === 0) promoteNextPlayers(match.teamA);
+                if (match.teamB.length === 0) promoteNextPlayers(match.teamB);
 
-                while(match.teamA.length < config.playersPerTeam && queue.value.length > 0) match.teamA.push(queue.value.shift());
-                while(match.teamB.length < config.playersPerTeam && queue.value.length > 0) match.teamB.push(queue.value.shift());
+                const refillNextSlots = (slot) => {
+                    const hasGK = slot.some(p => p.role === 'GK');
+                    if (!hasGK && queue.value.length > 0) {
+                        const gkIndex = queue.value.findIndex(p => p.role === 'GK');
+                        if (gkIndex !== -1) {
+                            const [gk] = queue.value.splice(gkIndex, 1);
+                            slot.push(gk);
+                        }
+                    }
+                    while(slot.length < config.playersPerTeam && queue.value.length > 0) {
+                        slot.push(queue.value.shift());
+                    }
+                }
+
+                refillNextSlots(nextTeams.team1);
+                if(nextTeams.team1.length >= config.playersPerTeam) {
+                    refillNextSlots(nextTeams.team2);
+                }
 
                 resetTimer(false); 
                 saveData();
@@ -524,6 +570,36 @@
                 saveData();
             };
 
+            const onDropOnQueueCard = (targetPlayerId) => {
+                if (!draggedItem) return;
+                
+                if (sourceList === 'queue') {
+                    const fromIndex = queue.value.findIndex(p => p.id === draggedItem.id);
+                    const toIndex = queue.value.findIndex(p => p.id === targetPlayerId);
+                    
+                    if (fromIndex > -1 && toIndex > -1) {
+                        const [movedPlayer] = queue.value.splice(fromIndex, 1);
+                        queue.value.splice(toIndex, 0, movedPlayer);
+                    }
+                } else {
+                     if (sourceList === 'teamA') match.teamA = match.teamA.filter(p => p.id !== draggedItem.id);
+                    else if (sourceList === 'teamB') match.teamB = match.teamB.filter(p => p.id !== draggedItem.id);
+                    else if (sourceList === 'nextTeam1') nextTeams.team1 = nextTeams.team1.filter(p => p.id !== draggedItem.id);
+                    else if (sourceList === 'nextTeam2') nextTeams.team2 = nextTeams.team2.filter(p => p.id !== draggedItem.id);
+                    
+                    const toIndex = queue.value.findIndex(p => p.id === targetPlayerId);
+                    if(toIndex > -1) {
+                        queue.value.splice(toIndex, 0, draggedItem);
+                    } else {
+                        queue.value.push(draggedItem);
+                    }
+                }
+                
+                draggedItem = null;
+                sourceList = null;
+                saveData();
+            };
+
             onMounted(() => {
                 loadData();
             });
@@ -531,16 +607,24 @@
             return {
                 config, status, ui, input, allPlayers, match, nextTeams, queue,
                 formattedTime,
-                addPlayers, resetAll, generateInitialTeams, markAllPaid,
+                addPlayers, resetAll, generateInitialTeams, markAllPaid, removeFromQueue,
                 toggleTimer, resetTimer, adjustScore, endMatch,
-                onDragStart, onDrop
+                onDragStart, onDrop, onDropOnQueueCard
             };
         }
     });
 
     app.component('player-card', {
-        props: ['player', 'index', 'mini'],
-        template: '#player-card-template'
+        props: ['player', 'index', 'mini', 'showRemove'],
+        template: '#player-card-template',
+        data() { return { isDragOver: false } },
+        methods: {
+            onDragOver() { this.isDragOver = true; },
+            onDrop(event) {
+                this.isDragOver = false;
+                this.$emit('drop-on-card', this.player.id);
+            }
+        }
     });
 
     app.mount('#app');
